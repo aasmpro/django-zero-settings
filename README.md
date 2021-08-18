@@ -1,5 +1,5 @@
 ## Django Zero Settings
-Django zero settings is a util for managing app settings.
+a Django util for managing app settings.
 ```
 pip install django-zero-settings
 ```
