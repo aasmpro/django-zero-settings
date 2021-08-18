@@ -9,7 +9,7 @@ you will create a settings object like:
 ```python
 from zero_settings import ZeroSettings
 
-settings = ZeroSettings(
+app_settings = ZeroSettings(
     # key will be used to get user settings from Django settings
     # required, must be string
     key="ZERO_SETTINGS",

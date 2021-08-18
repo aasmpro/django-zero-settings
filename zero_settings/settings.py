@@ -10,7 +10,7 @@ class ZeroSettings:
 
         from zero_settings import ZeroSettings
 
-        settings = ZeroSettings(
+        app_settings = ZeroSettings(
             # key will be used to get user settings from Django settings
             # required, must be string
             key="ZERO_SETTINGS",
@@ -48,7 +48,7 @@ class ZeroSettings:
             settings_doc="https://app.com/doc/settings"
         )
 
-        print(settings.TEST_KEY)
+        print(app_settings.TEST_KEY)
 
     Any setting with string import paths will be automatically resolved
     and return the class, rather than the string literal.
