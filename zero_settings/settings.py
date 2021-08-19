@@ -63,7 +63,7 @@ class ZeroSettings:
         removed_settings=None,
         settings_doc=None,
     ):
-        if isinstance(self.key, str):
+        if isinstance(key, str):
             self.key = key
         else:
             raise ValueError("key must be a string")
@@ -89,25 +89,25 @@ class ZeroSettings:
 
         if not settings_doc:
             self.settings_doc = ""
-        if isinstance(settings_doc, str):
+        elif isinstance(settings_doc, str):
             self.settings_doc = settings_doc
         else:
             raise ValueError("settings_doc must be a string or None")
 
-        self._user_settings = self.__check_user_settings(user_settings)
+        if user_settings:
+            self._user_settings = self.__check_user_settings(user_settings)
+
         self._cached_attrs = set()
 
     def __check_user_settings(self, user_settings):
         """
         Check settings for removed keys
         """
-        if not user_settings:
-            return {}
         if isinstance(user_settings, dict):
             if self.removed_settings:
                 for setting in self.removed_settings:
                     if setting in user_settings:
-                        msg = user_settings.get(setting, None)
+                        msg = self.removed_settings.get(setting, None)
                         if not msg:
                             msg = "The '%s.%s' setting has been removed." % (self.key, setting)
                             if self.settings_doc:

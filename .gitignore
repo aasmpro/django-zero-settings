@@ -1,5 +1,6 @@
 dist
 *.egg-info
+.tox
 _env
 .vscode
 __pycache__
