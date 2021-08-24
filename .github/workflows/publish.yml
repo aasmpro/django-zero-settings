@@ -24,6 +24,7 @@ jobs:
       - name: Test with tox
         run: tox
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

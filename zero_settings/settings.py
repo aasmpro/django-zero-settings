@@ -33,7 +33,7 @@ class ZeroSettings:
 
             # list of settings that must be imported, lazy check,
             # optional, can be list/tuple or None
-            import_settings=["TEST_IMPORT", "TEST_IMPORT_LIST"],
+            import_strings=["TEST_IMPORT", "TEST_IMPORT_LIST"],
 
             # dict of settings that had be removed,
             # message can be None or empty string to show default,
@@ -62,145 +62,243 @@ class ZeroSettings:
         import_strings=None,
         removed_settings=None,
         settings_doc=None,
+        use_cache=True,
+        strict_defaults=True,
+        pre_check_defaults=True,
+        pre_check_imports=True,
+        pre_check_removed=True,
     ):
         if isinstance(key, str):
-            self.key = key
+            self.__key = key
         else:
-            raise ValueError("key must be a string")
+            raise ValueError("key must be string")
 
         if isinstance(defaults, dict):
-            self.defaults = defaults
+            self.__defaults = defaults
         else:
-            raise ValueError("defaults must be a dict")
+            raise ValueError("defaults must be dict")
 
         if not import_strings:
-            self.import_strings = []
+            self.__import_strings = []
         elif isinstance(import_strings, (list, tuple)):
-            self.import_strings = import_strings
+            self.__import_strings = import_strings
         else:
-            raise ValueError("import_strings must be a list/tuple of strings or None")
+            raise ValueError("import_strings must be list/tuple of strings or None")
 
         if not removed_settings:
-            self.removed_settings = {}
+            self.__removed_settings = {}
         elif isinstance(removed_settings, dict):
-            self.removed_settings = removed_settings
+            self.__removed_settings = removed_settings
         else:
-            raise ValueError("removed_settings must be a dict of setting: msg or None")
+            raise ValueError("removed_settings must be dict of setting: msg or None")
 
         if not settings_doc:
-            self.settings_doc = ""
+            self.__settings_doc = ""
         elif isinstance(settings_doc, str):
-            self.settings_doc = settings_doc
+            self.__settings_doc = settings_doc
         else:
-            raise ValueError("settings_doc must be a string or None")
+            raise ValueError("settings_doc must be string or None")
 
-        if user_settings:
-            self._user_settings = self.__check_user_settings(user_settings)
-
-        self._cached_attrs = set()
-
-    def __check_user_settings(self, user_settings):
-        """
-        Check settings for removed keys
-        """
-        if isinstance(user_settings, dict):
-            if self.removed_settings:
-                for setting in self.removed_settings:
-                    if setting in user_settings:
-                        msg = self.removed_settings.get(setting, None)
-                        if not msg:
-                            msg = "The '%s.%s' setting has been removed." % (self.key, setting)
-                            if self.settings_doc:
-                                msg += " Please refer to '%s' for available settings." % (self.settings_doc)
-                        raise RuntimeError(msg)
-            return user_settings
+        if not user_settings:
+            self.__user_settings = {}
+        elif isinstance(user_settings, dict):
+            self.__user_settings = user_settings
         else:
-            raise ValueError("user_settings must be a dict or None")
+            raise ValueError("user_settings must be dict or None")
 
-    @property
-    def user_settings(self):
-        if not hasattr(self, "_user_settings"):
-            _user_settings = getattr(django_settings, self.key, {})
-            self._user_settings = self.__check_user_settings(_user_settings)
-        return self._user_settings
+        if isinstance(use_cache, bool):
+            self.__use_cache = use_cache
+        else:
+            raise ValueError("use_cache must be boolean")
 
-    def import_from_string(self, val, setting_name):
+        if isinstance(strict_defaults, bool):
+            self.__strict_defaults = strict_defaults
+        else:
+            raise ValueError("strict_defaults must be boolean")
+
+        if isinstance(pre_check_defaults, bool):
+            self.__pre_check_defaults = pre_check_defaults
+            if self.__pre_check_defaults and self.__strict_defaults:
+                self.__check_defaults(self.__get_user_settings())
+        else:
+            raise ValueError("pre_check_defaults must be boolean")
+
+        if isinstance(pre_check_imports, bool):
+            self.__pre_check_imports = pre_check_imports
+            if self.__pre_check_imports:
+                self.__check_import_strings(self.__import_strings)
+        else:
+            raise ValueError("pre_check_imports must be boolean")
+
+        if isinstance(pre_check_removed, bool):
+            self.__pre_check_removed = pre_check_removed
+            if self.__pre_check_removed:
+                self.__check_removed_settings(self.__get_user_settings())
+                self.__check_removed_settings(self.__defaults)
+        else:
+            raise ValueError("pre_check_removed must be boolean")
+
+        self.__cached_attrs = set()
+
+    def __has_default(self, attr):
         """
-        Attempt to import a class from a string representation.
+        True if attr is in defaults
+        """
+        return attr in self.__defaults
+
+    def __is_removed(self, attr):
+        """
+        True if attr is in removed settings
+        """
+        return attr in self.__removed_settings
+
+    def __is_import(self, attr):
+        """
+        True if attr is in import strings
+        """
+        return attr in self.__import_strings
+
+    def __cache(self, attr, value):
+        """
+        Cache and set class attr if use_cache is True
+        """
+        if self.__use_cache:
+            self.__cached_attrs.add(attr)
+            setattr(self, attr, value)
+
+    def __clear_cache(self, attr=None):
+        """
+        Remove cached attrs and settings
+        """
+        if not attr:
+            for attr in self.__cached_attrs:
+                delattr(self, attr)
+            self.__cached_attrs.clear()
+            if hasattr(self, "__cached_settings"):
+                delattr(self, "__cached_settings")
+
+        elif attr and hasattr(self, attr):
+            delattr(self, attr)
+
+    def __check_removed(self, attr):
+        """
+        Check if an attribute is removed from settings
+        """
+        if self.__is_removed(attr):
+            msg = self.__removed_settings.get(attr, None)
+            if not msg:
+                msg = "The '%s.%s' setting has been removed." % (self.__key, attr)
+                if self.__settings_doc:
+                    msg += " Please refer to '%s' for available settings." % (self.__settings_doc)
+            raise RuntimeError(msg)
+
+    def __check_removed_settings(self, settings):
+        """
+        Check all setting keys for removed attributes
+        """
+        for attr in settings:
+            self.__check_removed(attr)
+
+    def __check_default_exists(self, attr):
+        """
+        Check if attribute exists in default settings
+        """
+        if not self.__has_default(attr):
+            raise AttributeError("Invalid setting: '%s.%s'" % (self.__key, attr))
+
+    def __check_defaults(self, settings):
+        """
+        Check all setting keys to exist in default settings
+        """
+        for attr in settings:
+            self.__check_default_exists(attr)
+
+    def __import_from_string(self, value, attr):
+        """
+        Attempt to import setting from a string representation.
         """
         try:
-            return import_string(val)
+            return import_string(value)
         except ImportError as e:
-            msg = "Could not import '%s.%s' for setting '%s'. %s: %s." % (
-                self.key,
-                val,
-                setting_name,
+            msg = "Could not import '%s' for setting '%s.%s'. %s: %s." % (
+                value,
+                self.__key,
+                attr,
                 e.__class__.__name__,
                 e,
             )
             raise ImportError(msg)
 
-    def perform_import(self, val, setting_name):
+    def __perform_import(self, value, attr):
         """
         If the given setting is a string import notation,
         then perform the necessary import or imports.
         """
-        if val is None:
+        if value is None:
             return None
-        elif isinstance(val, str):
-            return self.import_from_string(val, setting_name)
-        elif isinstance(val, (list, tuple)):
-            return [self.import_from_string(item, setting_name) for item in val]
-        return val
+        elif isinstance(value, str):
+            return self.__import_from_string(value, attr)
+        elif isinstance(value, (list, tuple)):
+            return [self.__import_from_string(item, attr) for item in value]
+        return value
+
+    def __import(self, attr):
+        """
+        Import and return imported value of attr or raise ImportError
+        """
+        value = self.__getattr(attr)
+        return self.__perform_import(value, attr)
+
+    def __check_import_strings(self, import_strings):
+        """
+        Check if all import strings are valid
+        """
+        for attr in import_strings:
+            self.__import(attr)
+
+    def __get_user_settings(self):
+        """
+        Get and update user settings with provided key
+        """
+        __cached_settings = getattr(django_settings, self.__key, {})
+        if self.__user_settings:
+            __cached_settings.update(self.__user_settings)
+
+        return __cached_settings
+
+    @property
+    def __settings(self):
+        """
+        Return cached settings or create one
+        """
+        if self.__use_cache:
+            if not hasattr(self, "__cached_settings"):
+                self.__cached_settings = self.__get_user_settings()
+            return self.__cached_settings
+        else:
+            return self.__get_user_settings()
+
+    def __getattr(self, attr):
+        """
+        Return settings attr or raise error
+        """
+        try:
+            return self.__settings[attr]
+        except KeyError:
+            return self.__defaults[attr]
 
     def __getattr__(self, attr):
-        if attr not in self.defaults:
-            raise AttributeError("Invalid setting: '%s.%s'" % (self.key, attr))
-
-        try:
-            # Check if present in user settings
-            val = self.user_settings[attr]
-        except KeyError:
-            # Fall back to defaults
-            val = self.defaults[attr]
-
-        # Coerce import strings into classes
-        if attr in self.import_strings:
-            val = self.perform_import(val, attr)
-
-        # Cache the result
-        self._cached_attrs.add(attr)
-        setattr(self, attr, val)
-        return val
-
-    def reload(self):
         """
-        Remove _cached_attrs and _user_settings
+        Return settings attr and cache if use_cached is True
         """
-        for attr in self._cached_attrs:
-            delattr(self, attr)
-        self._cached_attrs.clear()
-        if hasattr(self, "_user_settings"):
-            delattr(self, "_user_settings")
+        self.__check_removed(attr)
+        if self.__strict_defaults:
+            self.__check_default_exists(attr)
 
+        value = self.__getattr(attr)
 
-def register_reload(settings):
-    """
-    Register your settings to auto reload on settings change.
-    Example:
+        if self.__is_import(attr):
+            value = self.__perform_import(value, attr)
 
-        from zero_settings import ZeroSettings, register_reload
-
-        # create your app settings
-        app_settings = ZeroSettings(...)
-
-        # register app settings
-        register_reload(app_settings)
-    """
-
-    def reload_settings(*args, **kwargs):
-        setting = kwargs["setting"]
-        if setting == settings.key:
-            settings.reload()
-
-    setting_changed.connect(reload_settings)
+        self.__cache(attr, value)
+        return value

@@ -1,67 +1,110 @@
-## Django Zero Settings
+# Django Zero Settings
 a Django util for managing app settings.
+
+when u create a package for Django, usually if your app can be configured, needs to use Django settings. so you will have some defaults which can be overridden by the user.
+
+this package helps you to specify defaults, and the key that users must use for configuring settings, then it will load user settings, update defaults, and import string notations.
+
+this is actually how [django-rest-framework](https://github.com/encode/django-rest-framework/blob/master/rest_framework/settings.py) configures its settings, but with a few more features.
+
+## Install
 ```
 pip install django-zero-settings
 ```
 
-### Usage
-you will create a settings object like:
+## Usages
+create a settings object like this:
 ```python
 from zero_settings import ZeroSettings
 
 app_settings = ZeroSettings(
-    # key will be used to get user settings from Django settings
-    # required, must be string
-    key="ZERO_SETTINGS",
-
-    # defaults settings
-    # required, must be dict
+    key="APP",
     defaults={
-        "TEST_KEY": "test_key"
-        "TEST_IMPORT": "module.file.class_name",
-        "TEST_IMPORT_LIST": [
-            "module.file.class_name_1",
-            "module.file.class_name_2",
-        ]
+        "TOKEN": "token"
     },
-
-    # manually defining user settings,
-    # by default settings will be loaded from Django settings with key,
-    # optional, can be dict or None
-    user_settings=None,
-
-    # list of settings that must be imported, lazy check,
-    # optional, can be list/tuple or None
-    import_settings=["TEST_IMPORT", "TEST_IMPORT_LIST"],
-
-    # dict of settings that had be removed,
-    # message can be None or empty string to show default,
-    # optional, can be dict or None
-    removed_settings={
-        "TEST_REMOVED": "An error message to show",
-        "TEST_ANOTHER_REMOVED": "", # or None
-    },
-
-    # settings documents location, to refer user to
-    # optional, can be str or None
-    settings_doc="https://app.com/doc/settings"
 )
 ```
 
-then you can import it and use:
+then you can import `app_settings` and use it:
 ```python
 from app.settings import app_settings
 
-print(app_settings.TEST_KEY)
+print(app_settings.TOKEN)
 ```
 
-you can register settings for auto reload on change:
+### Args
+`ZeroSettings` can get following args:
+
+| arg                | desc                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`              | the settings key which users will define settings with, is required and must be a string.                                                                                                                                                                                                                                                                                                                 |
+| `defaults`         | default settings for the app, required and must be a dict.                                                                                                                                                                                                                                                                                                                                                |
+| `user_settings`    | you can also set user settings manually, in this case, user settings with `key` will not be loaded. is optional and can be a dict.                                                                                                                                                                                                                                                                        |
+| `import_strings`   | a list of setting keys that must be imported, import strings is lazy checked and will raise ImportError on exceptions like: `"Could not import 'app.utils.Token' for setting 'APP.TOKEN_CLASS'. ImportError: path does not exist."`                                                                                                                                                                       |
+| `removed_settings` | a dict of settings which had been removed, in `{"KEY": "msg"}` format. it will raise RuntimeError if a setting is in removed_settings. note that these keys must be also on defaults too, otherwise, it will raise AttributeError instead. the `msg` part of dict is the error message. on `None` or empty strings, it generates the default message which is `"The 'APP.KEY' setting has been removed."` |
+| `settings_doc`     | a string that locates the settings document path, the value will be used to generate `removed_settings` error with a message like: `"Please refer to 'https://app.com/doc/settings' for available settings."`                                                                                                                                                                                             |
+
+
+### Import Strings
+with following class and methods at `app.utils`:
 ```python
-from zero_settings import ZeroSettings, register_reload
+class Token:
+    @staticmethod
+    def get_token():
+        return "token"
 
-# create your app settings
-app_settings = ZeroSettings(...)
+def validate_value(token):
+    return token == "token"
 
-# register app settings
-register_reload(app_settings)
+def validate_length(token):
+    return len(token) == 5
 ```
+
+you can create an `app_settings` like this:
+```python
+from zero_settings import ZeroSettings
+
+app_settings = ZeroSettings(
+    key="APP",
+    defaults={
+        "TOKEN_CLASS": "app.utils.Token",
+        "TOKEN_VALIDATORS": [
+            "app.utils.validate_value",
+            "app.utils.validate_length",
+        ]
+    },
+    import_strings=[
+        "TOKEN_CLASS",
+        "TOKEN_VALIDATORS",
+    ]
+)
+```
+
+then you can import `app_settings` and use it:
+```python
+from app.settings import app_settings
+
+token = app_setting.TOKEN_CLASS.get_token()
+for validator in app_settings.TOKEN_VALIDATORS:
+    validator(token)
+```
+
+### Removed Settings
+removed settings can be configured like:
+```python
+from zero_settings import ZeroSettings
+
+app_settings = ZeroSettings(
+    key="APP",
+    defaults={
+        "TOKEN": "token",
+        "URL": None, # you need to include the key in defaults too.
+    },
+    removed_settings={
+        "URL": None, # or ""
+        # or
+        "URL": "URL had been removed from settings."
+    }
+)
+```
+then if user tries to get the `URL` key, a `RuntimeError` will be raised.
