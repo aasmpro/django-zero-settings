@@ -113,3 +113,49 @@ app_settings = ZeroSettings(
 )
 ```
 then if user tries to get the `URL` key, a `RuntimeError` will be raised.
+
+
+### Cache
+ZeroSettings cache results on first attempt to get a key, if `use_cache` is `True`, as it will `setattr` that value to prevent later calls get an `AttributeError` from `__getattribute__`. to prevent this functionality, you can set `use_cache` to `False`.
+```python
+from zero_settings import ZeroSettings
+
+app_settings = ZeroSettings(
+    key="APP",
+    defaults={
+        "TOKEN": "token"
+    },
+    use_cache=False
+)
+```
+also there is a `_clear_cache()` method, which let you to clear cache manually. a simple use case can be in tests, when you want cached keys been cleared:
+```python
+from django.test import TestCase
+from django.conf import settings as django_settings
+from app.settings import app_settings
+
+@override_settings(APP={"TOKEN": "new_token"})
+class MyTestCase(TestCase):
+    def test_something(self):
+        print(app_settings.TOKEN)                            # new_token
+        with self.settings(APP={"TOKEN": "other_token"}):
+            app_settings._clear_cache()
+            print(django_settings.APP["TOKEN"])              # other_token
+            print(app_settings.SETTING1)                     # other_token
+            self.assertEqual(django_settings.APP["TOKEN"], app_settings.SETTING1)
+```
+
+
+## Contribution & Tests
+Contributions are warmly accepted! change and make it better as you wish.
+
+ZeroSettings use `tox` to run tests for different envs, to run tests:
+```
+$ pip install tox
+$ tox
+```
+it will create and run tests for following Python and Django versions:
+```
+Python: 3.5, 3.6, 3.7, 3.8, 3.9
+Django: 2.0, 2.2, 3.0, 3.1, 3.2
+```

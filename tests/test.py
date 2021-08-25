@@ -31,6 +31,7 @@ class TestZeroSettings(TestCase):
             "IMPORT_LIST",
         ]
         self.SETTINGS_DOC = "https://app.com/doc/settings"
+
         return super().setUp()
 
     @tag("args")
@@ -982,3 +983,79 @@ class TestZeroSettings(TestCase):
             % (self.SETTINGS_DOC),
         ):
             app_settings.REMOVED
+
+    @tag(
+        "attrs",
+        "cache",
+        "override",
+        "use_cache",
+        "strict_defaults",
+        "pre_check_defaults",
+        "pre_check_imports",
+        "pre_check_removed",
+    )
+    def test_overrides_before_being_cached(self):
+        """
+        Test override settings before being cached
+        """
+        app_settings = ZeroSettings(key="APP", defaults=self.DEFAULTS)
+        with self.settings(APP={"VALUE": "new_value"}):
+            self.assertEqual(app_settings.VALUE, "new_value")
+
+    @tag(
+        "attrs",
+        "cache",
+        "override",
+        "use_cache",
+        "strict_defaults",
+        "pre_check_defaults",
+        "pre_check_imports",
+        "pre_check_removed",
+    )
+    def test_overrides_being_cached(self):
+        """
+        Test override settings being cached
+        """
+        app_settings = ZeroSettings(key="APP", defaults=self.DEFAULTS)
+        app_settings.VALUE
+        with self.settings(APP={"VALUE": "new_value"}):
+            self.assertEqual(app_settings.VALUE, "value")
+            self.assertNotEqual(app_settings.VALUE, "new_value")
+
+    @tag(
+        "attrs",
+        "cache",
+        "override",
+        "strict_defaults",
+        "pre_check_defaults",
+        "pre_check_imports",
+        "pre_check_removed",
+    )
+    def test_overrides_with_no_cache(self):
+        """
+        Test override settings with no cache
+        """
+        app_settings = ZeroSettings(key="APP", defaults=self.DEFAULTS, use_cache=False)
+        app_settings.VALUE
+        with self.settings(APP={"VALUE": "new_value"}):
+            self.assertEqual(app_settings.VALUE, "new_value")
+
+    @tag(
+        "attrs",
+        "cache",
+        "override",
+        "use_cache",
+        "strict_defaults",
+        "pre_check_defaults",
+        "pre_check_imports",
+        "pre_check_removed",
+    )
+    def test_overrides_and_use_clear_cache(self):
+        """
+        Test override settings and user clear cache
+        """
+        app_settings = ZeroSettings(key="APP", defaults=self.DEFAULTS)
+        app_settings.VALUE
+        with self.settings(APP={"VALUE": "new_value"}):
+            app_settings._clear_cache()
+            self.assertEqual(app_settings.VALUE, "new_value")
