@@ -1,3 +1,5 @@
+![Tests](https://github.com/aasmpro/django-zero-settings/actions/workflows/tests.yml/badge.svg)
+![PYPI](https://github.com/aasmpro/django-zero-settings/actions/workflows/publish.yml/badge.svg)
 # Django Zero Settings
 a Django util for managing app settings.
 
@@ -141,8 +143,8 @@ class MyTestCase(TestCase):
         with self.settings(APP={"TOKEN": "other_token"}):
             app_settings._clear_cache()
             print(django_settings.APP["TOKEN"])              # other_token
-            print(app_settings.SETTING1)                     # other_token
-            self.assertEqual(django_settings.APP["TOKEN"], app_settings.SETTING1)
+            print(app_settings.TOKEN)                        # other_token
+            self.assertEqual(django_settings.APP["TOKEN"], app_settings.TOKEN)
 ```
 
 
