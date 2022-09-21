@@ -9,6 +9,10 @@ this package helps you to specify defaults, and the key that users must use for 
 
 this is actually how [django-rest-framework](https://github.com/encode/django-rest-framework/blob/master/rest_framework/settings.py) configures its settings, but with a few more features.
 
+## Supported Versions
+- 3.5 <= Python <= 3.10
+- 2.0 <= Django <= 4.1
+
 ## Install
 ```
 pip install django-zero-settings
@@ -158,6 +162,6 @@ $ tox
 ```
 it will create and run tests for following Python and Django versions:
 ```
-Python: 3.5, 3.6, 3.7, 3.8, 3.9
-Django: 2.0, 2.2, 3.0, 3.1, 3.2
+Python: 3.5, 3.6, 3.7, 3.8, 3.9, 3.10
+Django: 2.0, 2.2, 3.0, 3.1, 3.2, 4.1
 ```
