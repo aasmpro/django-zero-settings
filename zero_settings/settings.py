@@ -1,5 +1,4 @@
 from django.conf import settings as django_settings
-from django.test.signals import setting_changed
 from django.utils.module_loading import import_string
 
 
@@ -314,7 +313,7 @@ class ZeroSettings:
 
     def __getattr__(self, attr):
         """
-        Return settings attr and cache if use_cached is True
+        Return settings attr and cache if use_cache is True
         """
         self._check_removed(attr)
         self._check_default_exists(attr)

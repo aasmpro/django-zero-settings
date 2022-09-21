@@ -26,7 +26,7 @@ class TestZeroSettings(TestCase):
                 "utils.test_method_2",
             ],
         }
-        self.IMPORT_SETRINGS = [
+        self.IMPORT_STRINGS = [
             "IMPORT",
             "IMPORT_LIST",
         ]
@@ -164,7 +164,7 @@ class TestZeroSettings(TestCase):
         app_settings = ZeroSettings(
             key="APP",
             defaults=self.DEFAULTS,
-            import_strings=self.IMPORT_SETRINGS,
+            import_strings=self.IMPORT_STRINGS,
             removed_settings={"REMOVED": "removed"},
         )
         self.assertEqual(app_settings._has_default("KEY"), True)
@@ -563,7 +563,7 @@ class TestZeroSettings(TestCase):
         """
         Test call import keys
         """
-        app_settings = ZeroSettings(key="APP", defaults=self.DEFAULTS, import_strings=self.IMPORT_SETRINGS)
+        app_settings = ZeroSettings(key="APP", defaults=self.DEFAULTS, import_strings=self.IMPORT_STRINGS)
         self.assertIsInstance(app_settings.IMPORT, type)
         self.assertEqual(app_settings.IMPORT.test_method_0(), "test_method_0")
         self.assertEqual(app_settings.IMPORT_LIST[0](), "test_method_1")
@@ -584,7 +584,7 @@ class TestZeroSettings(TestCase):
         Test pre check wrong import string
         """
         with self.assertRaises(ImportError):
-            ZeroSettings(key="APP", defaults=self.DEFAULTS, import_strings=self.IMPORT_SETRINGS)
+            ZeroSettings(key="APP", defaults=self.DEFAULTS, import_strings=self.IMPORT_STRINGS)
 
     @tag(
         "attrs",
@@ -602,7 +602,7 @@ class TestZeroSettings(TestCase):
         app_settings = ZeroSettings(
             key="APP",
             defaults=self.DEFAULTS,
-            import_strings=self.IMPORT_SETRINGS,
+            import_strings=self.IMPORT_STRINGS,
             pre_check_imports=False,
         )
         with self.assertRaises(ImportError):
@@ -623,7 +623,7 @@ class TestZeroSettings(TestCase):
         Test pre check wrong import string list
         """
         with self.assertRaises(ImportError):
-            ZeroSettings(key="APP", defaults=self.DEFAULTS, import_strings=self.IMPORT_SETRINGS)
+            ZeroSettings(key="APP", defaults=self.DEFAULTS, import_strings=self.IMPORT_STRINGS)
 
     @tag(
         "attrs",
@@ -641,7 +641,7 @@ class TestZeroSettings(TestCase):
         app_settings = ZeroSettings(
             key="APP",
             defaults=self.DEFAULTS,
-            import_strings=self.IMPORT_SETRINGS,
+            import_strings=self.IMPORT_STRINGS,
             pre_check_imports=False,
         )
         with self.assertRaises(ImportError):
@@ -666,7 +666,7 @@ class TestZeroSettings(TestCase):
             ZeroSettings(
                 key="APP",
                 defaults=self.DEFAULTS,
-                import_strings=self.IMPORT_SETRINGS,
+                import_strings=self.IMPORT_STRINGS,
                 user_settings=user_settings,
             )
 
@@ -687,7 +687,7 @@ class TestZeroSettings(TestCase):
         app_settings = ZeroSettings(
             key="APP",
             defaults=self.DEFAULTS,
-            import_strings=self.IMPORT_SETRINGS,
+            import_strings=self.IMPORT_STRINGS,
             user_settings=user_settings,
             pre_check_imports=False,
         )
@@ -713,7 +713,7 @@ class TestZeroSettings(TestCase):
             ZeroSettings(
                 key="APP",
                 defaults=self.DEFAULTS,
-                import_strings=self.IMPORT_SETRINGS,
+                import_strings=self.IMPORT_STRINGS,
                 user_settings=user_settings,
             )
 
@@ -734,7 +734,7 @@ class TestZeroSettings(TestCase):
         app_settings = ZeroSettings(
             key="APP",
             defaults=self.DEFAULTS,
-            import_strings=self.IMPORT_SETRINGS,
+            import_strings=self.IMPORT_STRINGS,
             user_settings=user_settings,
             pre_check_imports=False,
         )
